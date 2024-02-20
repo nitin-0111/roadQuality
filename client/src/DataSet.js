@@ -1,10 +1,10 @@
 export const roadData=[
  
   {
-    "longitude_s": 75.8183596,
-    "longitude_e": 75.818369,
-    "latitude_s": 26.8605643,
-    "latitude_e": 26.8605456,
+    "longitude_s": 75.818,
+    "longitude_e": 75.818,
+    "latitude_s": 26.860,
+    "latitude_e": 26.860,
     "quality_label": 0
   },
   {
