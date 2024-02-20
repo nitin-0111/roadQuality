@@ -7,6 +7,9 @@ import { it } from "node:test";
 import isFileEmpty from "./utils/isFileEmpty";
 import { spawn } from "child_process";
 import path from "path";
+
+
+
 const app=express();
 
 
@@ -80,25 +83,48 @@ app.get("/label/:sessionId",(req,res)=>{
  const sessionId = req.params.sessionId;
 
  // Spawn a Python process to execute the data merge script
- const mergeProcess = spawn("python", ['./src/pythonCodes/data_merge.py', sessionId]);
+//  const mergeProcess = spawn("python", ['./src/pythonCodes/data_merge.py', sessionId]);
 
- // Handle the output or errors from the Python process
- mergeProcess.stdout.on('data', (data) => {
-     console.log(`stdout: ${data}`);
- });
+//  // Handle the output or errors from the Python process
+//  mergeProcess.stdout.on('data', (data) => {
+//      console.log(`stdout: ${data}`);
+//  });
 
- mergeProcess.stderr.on('data', (data) => {
-     console.error(`stderr: ${data}`);
- });
+//  mergeProcess.stderr.on('data', (data) => {
+//      console.error(`stderr: ${data}`);
+//  });
 
- // Handle the Python process exit
- mergeProcess.on('close', (code) => {
-     console.log(`child process exited with code ${code}`);
-     // Additional steps here if needed
- });
+//  // Handle the Python process exit
+//  mergeProcess.on('close', (code) => {
+//      console.log(`child process exited with code ${code}`);
+//      // Additional steps here if needed
+//  });
+
+  predictUsingSVM(sessionId);
  
  res.json({msg:"check done"});
 })
+
+function predictUsingSVM(sessionId) {
+    const pythonProcess = spawn('python', ['./src/pythonCodes/svm_model.py', sessionId]);
+
+    pythonProcess.stdout.on('data', (data) => {
+        console.log(`stdout: ${data}`);
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+    });
+
+    pythonProcess.on('close', (code) => {
+        console.log(`child process exited with code ${code}`);
+    });
+}
+
+
+
+
+
 
 app.get("/",(req:Request,res:Response)=>{
     res.json({msg:"ok !! "});
