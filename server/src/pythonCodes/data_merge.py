@@ -14,8 +14,8 @@ def main():
     merged_data = pd.merge_asof(acceleration.sort_values('time'), location.sort_values('time'), on='time')
 
     # Forward fill missing values in location columns
-    merged_data[['altitude', 'longitude', 'latitude']] = merged_data[['altitude', 'longitude', 'latitude']].fillna(method='ffill')
-    merged_data[['altitude', 'longitude', 'latitude']] = merged_data[['altitude', 'longitude', 'latitude']].fillna(method='bfill')
+    merged_data[['altitude', 'longitude', 'latitude']] = merged_data[['altitude', 'longitude', 'latitude']].ffill()
+    merged_data[['altitude', 'longitude', 'latitude']] = merged_data[['altitude', 'longitude', 'latitude']].bfill()
 
     # Create a new dataframe with the required columns
     trip_1 = merged_data[['time', 'z', 'x', 'y', 'altitude', 'longitude', 'latitude']]
@@ -35,14 +35,11 @@ def main():
     trip_1['ay'] = ay_prime
     trip_1['az'] = az_prime
 
-    # Save updated data to the existing CSV file
-    # trip_1.to_csv(f"../tmp_data/merge_And_preprocessed_{sessionId}.csv", index=False)
-
     # Calculate segment-wise data
     segment_size = 2
     overlap = 1
     segments = pd.DataFrame(columns=['time', 'longitude', 'latitude', 'mean_x', 'mean_y', 'mean_z', 'RMS_x', 'RMS_y', 'RMS_z'])
-
+ 
     for i in range(0, len(trip_1), segment_size - overlap):
         segment = trip_1.iloc[i:i + segment_size]
         if len(segment) < segment_size:
@@ -60,7 +57,7 @@ def main():
             'RMS_z': np.sqrt(np.mean(np.square(segment['az'])))
         }
 
-        segments = segments.append(segment_data, ignore_index=True)
+        segments = pd.concat([segments, pd.DataFrame(segment_data, index=[0])], ignore_index=True)
 
     # Save segment data to segment.csv
     segments.to_csv(f"./tmp_data/svm_input_{sessionId}.csv", index=False)
