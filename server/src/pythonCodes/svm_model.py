@@ -4,7 +4,7 @@ from joblib import load
 
 def predict_output(session_id):
     # Load the serialized SVM model
-    svm_model = load('svm_model.joblib')
+    svm_model = load('svm_model.sav')
 
     # Read input CSV file into a DataFrame
     input_data = pd.read_csv(f"./tmp_data/svm_input_{session_id}.csv")
@@ -19,7 +19,7 @@ def predict_output(session_id):
     input_data['predicted_output'] = predicted_output
 
     # Save the DataFrame with predicted output to output CSV file
-    output_data = input_data[['time', 'longitude', 'latitude', 'predicted_output']]
+    output_data = input_data[['time', 'longitude_s', 'latitude_s', 'longitude_e', 'latitude_e','predicted_output']]
     output_data.to_csv(f"./tmp_data/output_{session_id}.csv", index=False)
 
 
