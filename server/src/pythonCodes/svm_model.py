@@ -16,10 +16,10 @@ def predict_output(session_id):
     predicted_output = svm_model.predict(features)
 
     # Add predicted output to input DataFrame
-    input_data['predicted_output'] = predicted_output
+    input_data['quality_label'] = predicted_output
 
     # Save the DataFrame with predicted output to output CSV file
-    output_data = input_data[['time', 'longitude_s', 'latitude_s', 'longitude_e', 'latitude_e','predicted_output']]
+    output_data = input_data[['time', 'longitude_s', 'latitude_s', 'longitude_e', 'latitude_e','quality_label']]
     output_data.to_csv(f"./tmp_data/output_{session_id}.csv", index=False)
 
 
