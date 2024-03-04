@@ -5,6 +5,7 @@ import { roadData } from '../tmp_dataSet/DataSet';
 import './MapComponent.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import axios from 'axios';
 
 import redMarkerIcon from './red_marker.png';
 
@@ -18,8 +19,8 @@ const myMarker = L.icon({
 
 const MapComponent = () => {
   const mapRef = useRef(null);
-  const [selectedLayer, setSelectedLayer] = useState('GoogleSatellite'); // Default selection
-  const [currLocation, setCurrLocation] = useState([26.865102, 75.807580]);
+  const [selectedLayer, setSelectedLayer] = useState('GoogleSatellite'); 
+  const [currLocation, setCurrLocation] = useState([26.862, 75.810]);
   const [markerDisplayed, setMarkerDisplayed] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
   const notify = () => toast("User location obtained!", { type: 'success' });
@@ -32,8 +33,20 @@ const MapComponent = () => {
           (position) => {
             const { latitude, longitude } = position.coords;
             setCurrLocation([latitude, longitude]);
-            setShowNotification(true); // Trigger notification when user's location is obtained
-            // map.setView([latitude, longitude], 25); // Set map view to user's current location
+            setShowNotification(true);
+  
+            // Send data to the server using Axios and the BASE_URL from .env
+            axios.post(`${process.env.REACT_APP_BASE_URL}/senddata`, {
+              latitude,
+              longitude,
+            })
+              .then((response) => {
+               
+                console.log('Location added successfully:', response.data);
+              })
+              .catch((error) => {
+                console.error('Error adding location:', error);
+              });
           },
           (error) => {
             console.error('Error getting user location:', error);
@@ -43,6 +56,7 @@ const MapComponent = () => {
         console.error('Geolocation is not supported by your browser.');
       }
     };
+  
     getUserLocation();
 
     const baseLayers = {
@@ -87,8 +101,8 @@ const MapComponent = () => {
 
       const addQuality = () => {
         const colors = {
-          0: 'lightgreen', // Quality label 0 - green color
-          1: 'red',   // Quality label 1 - red color
+          0: 'lightgreen',
+          1: 'red',  
         };
 
         roadData.forEach(segment => {
