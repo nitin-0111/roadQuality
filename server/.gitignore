@@ -3,7 +3,7 @@
 # dependencies
 
 /node_modules
-/tmp_data
+# /tmp_data
 
 /dist
 /.pnp

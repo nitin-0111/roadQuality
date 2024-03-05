@@ -3,10 +3,11 @@ import fs from "fs";
 import path from "path";
 import { spawn } from "child_process";
 import saveInDB from "../../db/saveInDB";
+import getDataFromDB from "../../db/getDataFromDB";
 const hashedSessionID = {};
-const test=(req,res)=>{
-    res.json("test Done");
-}
+const test = (req, res) => {
+  res.json("test Done");
+};
 const getDataFromSensor = async (req: Request, res: Response) => {
   // const data = req.body;
   const sessionId: string = req.body.sessionId;
@@ -39,7 +40,7 @@ const getDataFromSensor = async (req: Request, res: Response) => {
     }
   });
 
-  console.log("sessionID ",sessionId);
+  console.log("sessionID ", sessionId);
 
   // Ensure the directory exists
   const directory = "./tmp_data/";
@@ -60,15 +61,10 @@ const getDataFromSensor = async (req: Request, res: Response) => {
 };
 
 const sendDataToFB = async (req, res) => {
-  const { longitude, latitude } = req.body; // Destructure longitude and latitude from the request body
-
-  // Now you can use longitude and latitude variables to process the data
-  // For example, you can fetch data based on these coordinates, arrange it, and send it back
+  const { longitude, latitude } = req.body;
 
   try {
-    // Fetch data based on longitude and latitude
-    // Arrange data
-    // Send back the arranged data as a response
+    const dbData = await getDataFromDB({ longitude, latitude });
     res
       .status(200)
       .json({ message: "Data received and processed successfully" });
@@ -84,15 +80,13 @@ const label = async (req, res) => {
   try {
     await mergeAndPreProcess(sessionId);
     await predictUsingSVM(sessionId);
-    await saveInDB(sessionId);
+    // await saveInDB(sessionId);
   } catch (error) {
     console.log("getting error in labeling using SVM for " + sessionId);
   }
 
   res.json({ msg: "check done" });
 };
-
-
 
 async function mergeAndPreProcess(sessionId: string) {
   //  Spawn a Python process to execute the data merge script
@@ -118,43 +112,43 @@ async function mergeAndPreProcess(sessionId: string) {
 }
 async function predictUsingSVM(sessionId: string) {
   try {
-    const pythonProcess = spawn('python', [
-      './src/pythonCodes/svm_model.py',
+    const pythonProcess = spawn("python", [
+      "./src/pythonCodes/svm_model.py",
       sessionId,
     ]);
 
-    pythonProcess.stdout.on('data', (data) => {
+    pythonProcess.stdout.on("data", (data: any) => {
       console.log(`stdout: ${data}`);
     });
 
-    pythonProcess.stderr.on('data', (data) => {
+    pythonProcess.stderr.on("data", (data: any) => {
       console.error(`stderr: ${data}`);
     });
 
-    pythonProcess.on('close', (code) => {
+    pythonProcess.on("close", (code: number) => {
       console.log(`svm_model.py child process exited with code ${code}`);
-    });
 
-    const testProcess = spawn("python", [
-      "./src/controller/getDataController/test1.py",
-      sessionId,
-    ]);
+      // Start the test process after pythonProcess is done
+      const testProcess = spawn("python", [
+        "./src/controller/getDataController/test1.py",
+        sessionId,
+      ]);
 
-    testProcess.stdout.on("data", (data) => {
-      console.log(`stdout: ${data}`);
-    });
+      testProcess.stdout.on("data", (data: any) => {
+        console.log(`stdout: ${data}`);
+      });
 
-    testProcess.stderr.on("data", (data) => {
-      console.error(`stderr: ${data}`);
-    });
+      testProcess.stderr.on("data", (data: any) => {
+        console.error(`stderr: ${data}`);
+      });
 
-    testProcess.on("close", (code) => {
-      console.log(`test1.py child process exited with code ${code}`);
+      testProcess.on("close", (code: number) => {
+        console.log(`test1.py child process exited with code ${code}`);
+      });
     });
   } catch (error) {
     console.error("Error executing Python scripts:", error);
   }
 }
 
-
-export { getDataFromSensor, sendDataToFB ,label,test};
+export { getDataFromSensor, sendDataToFB, label, test };

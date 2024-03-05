@@ -7,7 +7,7 @@ def test(session_id):
 
     for index, row in features.iterrows():
         input_data.loc[index, 'quality_label'] = 0
-        if abs(row['mean_z']) > 3.4 and abs(row['RMS_z']) > 3.4:
+        if abs(row['mean_z']) > 2 and abs(row['RMS_z']) > 2:
             input_data.loc[index, 'quality_label'] = 1
         if abs(row['mean_x']) > 15 and abs(row['RMS_x']) > 15:
             input_data.loc[index, 'quality_label'] = 1

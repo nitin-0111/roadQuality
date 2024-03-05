@@ -4,11 +4,10 @@ import mysql from 'mysql2/promise';
 const mysqlConfig = {
     host: 'localhost',
     user: 'root',
-    password: '123@Nitin',
+    password: '1234',
     database: 'roadData',
 };
 
-// Function to create MySQL connection
 const createConnection = async () => {
     try {
         const connection = await mysql.createConnection(mysqlConfig);
@@ -20,6 +19,4 @@ const createConnection = async () => {
     }
 }
 
-// createConnection();
-// Export the function to create MySQL connection
 export default createConnection;
