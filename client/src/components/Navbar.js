@@ -13,9 +13,14 @@ import Menu from '@mui/material/Menu';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 import AccountCircle from '@mui/icons-material/AccountCircle';
-
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MoreIcon from '@mui/icons-material/MoreVert';
+import Button from '@mui/material/Button';
+
+const SearchContainer = styled('div')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+}));
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -57,111 +62,87 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-export default function PrimarySearchAppBar() {
+export default function PrimarySearchAppBar({pathCoords, setPathCoords}) {
+
+  const [startPoint, setStartPoint] = React.useState('');
+  const [destination, setDestination] = React.useState('');
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = React.useState(null);
 
-  const isMenuOpen = Boolean(anchorEl);
-  const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
+  // const [startPoint, setStartPoint] = React.useState('');
+  // const [destination, setDestination] = React.useState('');
+
+  const menuId = 'primary-search-account-menu';
+  const mobileMenuId = 'primary-search-account-menu-mobile';
+
+  const handleStartPointChange = (event) => {
+    setStartPoint(event.target.value);
+  };
+
+  const handleDestinationChange = (event) => {
+    setDestination(event.target.value);
+  };
+
+  const handleEnterKeyPress = async (event) => {
+    if (event.key === 'Enter') {
+      await getLocationCoordinates(startPoint, 'start');
+      await getLocationCoordinates(destination, 'destination');
+    }
+  };
+
+  const handleSubmit = async () => {
+    await getLocationCoordinates(startPoint, 'start');
+    await getLocationCoordinates(destination, 'destination');
+  };
+
+  const getLocationCoordinates = async (location, type) => {
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${location}&format=json&addressdetails=1`);
+      const data = await response.json();
+      const { lat, lon } = data[0];
+      if (type === 'start') {
+        setPathCoords(prevState => ({
+          ...prevState,
+          start: {
+            lat: lat,
+            lng: lon
+          }
+        }));
+      } else {
+        setPathCoords(prevState => ({
+          ...prevState,
+          dest: {
+            lat: lat,
+            lng: lon
+          }
+        }));
+      }
+      
+      console.log(`${type} Point - Latitude: ${lat}, Longitude: ${lon}`);
+    } catch (error) {
+      console.error('Error fetching location coordinates:', error);
+    }
+  };
 
   const handleProfileMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
-  };
-
-  const handleMobileMenuClose = () => {
-    setMobileMoreAnchorEl(null);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    handleMobileMenuClose();
   };
 
   const handleMobileMenuOpen = (event) => {
     setMobileMoreAnchorEl(event.currentTarget);
   };
 
-  const menuId = 'primary-search-account-menu';
-  const renderMenu = (
-    <Menu
-      anchorEl={anchorEl}
-      anchorOrigin={{
-        vertical: 'top',
-        horizontal: 'right',
-      }}
-      id={menuId}
-      keepMounted
-      transformOrigin={{
-        vertical: 'top',
-        horizontal: 'right',
-      }}
-      open={isMenuOpen}
-      onClose={handleMenuClose}
-    >
-      <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
-      <MenuItem onClick={handleMenuClose}>My account</MenuItem>
-    </Menu>
-  );
-
-  const mobileMenuId = 'primary-search-account-menu-mobile';
-  const renderMobileMenu = (
-    <Menu
-      anchorEl={mobileMoreAnchorEl}
-      anchorOrigin={{
-        vertical: 'top',
-        horizontal: 'right',
-      }}
-      id={mobileMenuId}
-      keepMounted
-      transformOrigin={{
-        vertical: 'top',
-        horizontal: 'right',
-      }}
-      open={isMobileMenuOpen}
-      onClose={handleMobileMenuClose}
-    >
-      
-      <MenuItem>
-        <IconButton
-          size="large"
-          aria-label="show 17 new notifications"
-          color="inherit"
-        >
-          <Badge badgeContent={17} color="error">
-            <NotificationsIcon />
-          </Badge>
-        </IconButton>
-        <p>Notifications</p>
-      </MenuItem>
-      <MenuItem onClick={handleProfileMenuOpen}>
-        <IconButton
-          size="large"
-          aria-label="account of current user"
-          aria-controls="primary-search-account-menu"
-          aria-haspopup="true"
-          color="inherit"
-        >
-          <AccountCircle />
-        </IconButton>
-        <p>Profile</p>
-      </MenuItem>
-    </Menu>
-  );
-
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
         <Toolbar>
-         
           <AddLocationAltIcon 
-          size="large"
             edge="start"
             color="inherit"
             aria-label="open drawer"
             sx={{ mr: 2 }}
           >
             <MenuIcon />
-
           </AddLocationAltIcon>
           <Typography
             variant="h6"
@@ -181,25 +162,35 @@ export default function PrimarySearchAppBar() {
             Help
           </Typography>
 
-          <Search>
-            <SearchIconWrapper>
-              <SearchIcon />
-            </SearchIconWrapper>
-            <StyledInputBase
-              placeholder="Start Point"
-              inputProps={{ 'aria-label': 'search' }}
-            />
-          </Search>
+          <SearchContainer>
+            <Search>
+              <SearchIconWrapper>
+                <SearchIcon />
+              </SearchIconWrapper>
+              <StyledInputBase
+                placeholder="Start Point"
+                inputProps={{ 'aria-label': 'search' }}
+                value={startPoint}
+                onChange={handleStartPointChange}
+                onKeyDown={handleEnterKeyPress}
+              />
+            </Search>
 
-          <Search>
-            <SearchIconWrapper>
-              <SearchIcon />
-            </SearchIconWrapper>
-            <StyledInputBase
-              placeholder="Destination"
-              inputProps={{ 'aria-label': 'search' }}
-            />
-          </Search>
+            <Search>
+              <SearchIconWrapper>
+                <SearchIcon />
+              </SearchIconWrapper>
+              <StyledInputBase
+                placeholder="Destination"
+                inputProps={{ 'aria-label': 'search' }}
+                value={destination}
+                onChange={handleDestinationChange}
+                onKeyDown={handleEnterKeyPress}
+              />
+            </Search>
+
+            <Button onClick={handleSubmit} variant="contained" color="primary">Submit</Button>
+          </SearchContainer>
 
           <Box sx={{ flexGrow: 1 }} />
           <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
@@ -242,8 +233,7 @@ export default function PrimarySearchAppBar() {
           </Box>
         </Toolbar>
       </AppBar>
-      {renderMobileMenu}
-      {renderMenu}
+      {/* Render menu components */}
     </Box>
   );
 }

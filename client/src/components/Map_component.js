@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-routing-machine'; // Import Leaflet Routing Machine
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css'; // Import routing machine CSS
 import { roadData } from '../tmp_dataSet/DataSet';
 import './MapComponent.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
-
 import redMarkerIcon from './red_marker.png';
-
 
 const myMarker = L.icon({
   iconUrl: redMarkerIcon,
@@ -17,16 +17,16 @@ const myMarker = L.icon({
   popupAnchor: [-3, -76],
 });
 
-const MapComponent = () => {
+const MapComponent = ({ pathCoords }) => {
   const mapRef = useRef(null);
-  const [selectedLayer, setSelectedLayer] = useState('GoogleSatellite'); 
+  const [selectedLayer, setSelectedLayer] = useState('GoogleSatellite');
   const [currLocation, setCurrLocation] = useState([26.862, 75.810]);
   const [markerDisplayed, setMarkerDisplayed] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
-  const notify = () => toast("User location obtained!", { type: 'success' });
+  const [routingControl, setRoutingControl] = useState(null);
+  const notify = () => toast('User location obtained!', { type: 'success' });
 
   useEffect(() => {
-
     const getUserLocation = () => {
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
@@ -34,19 +34,20 @@ const MapComponent = () => {
             const { latitude, longitude } = position.coords;
             setCurrLocation([latitude, longitude]);
             setShowNotification(true);
-  
-            // Send data to the server using Axios and the BASE_URL from .env
-            axios.post(`${process.env.REACT_APP_BASE_URL}/senddata`, {
-              latitude,
-              longitude,
-            })
-              .then((response) => {
-               
-                console.log('Location added successfully:', response.data);
-              })
-              .catch((error) => {
-                console.error('Error adding location:', error);
-              });
+
+            // axios
+            //   .post(${process.env.REACT_APP_BASE_URL}/senddata, {
+            //     latitude,
+            //     longitude,
+            //   })
+            //   .then((response) => {
+            //     console.log('Location added successfully:', response.data);
+            //   })
+            //   .catch((error) => {
+            //     console.error('Error adding location:', error);
+            //   });
+
+
           },
           (error) => {
             console.error('Error getting user location:', error);
@@ -56,27 +57,27 @@ const MapComponent = () => {
         console.error('Geolocation is not supported by your browser.');
       }
     };
-  
+
     getUserLocation();
 
     const baseLayers = {
       GoogleSatellite: L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
         maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
       }),
 
       GoogleStreets: L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
         maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
       }),
       GoogleTerrain: L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
         maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
       }),
       GoogleHybrid: L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
         maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-      })
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      }),
     };
 
     if (!mapRef.current) {
@@ -90,43 +91,46 @@ const MapComponent = () => {
         const selected = event.target.value;
         setSelectedLayer(selected);
         const selectedLayer = baseLayers[selected];
-        map.eachLayer(layer => {
+        map.eachLayer((layer) => {
           map.removeLayer(layer);
         });
         selectedLayer.addTo(map);
       };
-
 
       const dropdown = L.control.layers(baseLayers).addTo(map);
 
       const addQuality = () => {
         const colors = {
           0: 'lightgreen',
-          1: 'red',  
+          1: 'red',
         };
 
-        roadData.forEach(segment => {
+        roadData.forEach((segment) => {
           const { longitude_s, longitude_e, latitude_s, latitude_e, quality_label } = segment;
 
-          // Define coordinates for the polyline
           const coordinates = [
             [latitude_s, longitude_s],
             [latitude_e, longitude_e],
           ];
 
-          // Determine color based on quality_label
           const color = colors[quality_label];
 
-          // Draw polyline on the map
           L.polyline(coordinates, { color, weight: 10, shadow: { color: 'black', opacity: 0.8 } }).addTo(map);
         });
-      }
+      };
       addQuality();
+
+      // Initialize routing control here
+      const routingControl = L.Routing.control({
+        waypoints: [],
+      }).addTo(map);
+
+      // Keep a reference to the routing control so you can update it later
+      // (e.g., when the pathCoords change)
+      setRoutingControl(routingControl);
     }
-
-
-
   }, [selectedLayer, currLocation]);
+
 
   useEffect(() => {
     if (showNotification) {
@@ -134,8 +138,13 @@ const MapComponent = () => {
       setShowNotification(false);
     }
   }, [showNotification]);
-  
 
+  useEffect(() => {
+    if (routingControl) {
+      const { start, dest } = pathCoords;
+      routingControl.setWaypoints([L.latLng(start.lat, start.lng), L.latLng(dest.lat, dest.lng)]);
+    }
+  }, [pathCoords, routingControl]);
 
   const handleAddMarker = () => {
     const map = mapRef.current;
@@ -143,7 +152,7 @@ const MapComponent = () => {
     if (!markerDisplayed) {
       const marker = L.marker(currLocation, { icon: myMarker });
       marker.bindPopup('Current Location').openPopup().addTo(map);
-      setMarkerDisplayed(true); // Update state to indicate marker is displayed
+      setMarkerDisplayed(true);
     } else {
       map.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
@@ -154,17 +163,14 @@ const MapComponent = () => {
     }
   };
 
-
-  return ( 
-  <div>
-    <div id="map"></div>
-    <button className={`marker-button ${markerDisplayed ? 'remove-marker' : 'add-marker'}`} onClick={handleAddMarker}>
-      {markerDisplayed ? '- Remove Marker' : '+ Add Marker'}
-    </button>
-  </div>
+  return (
+    <div>
+      <div id="map"></div>
+      <button className={`marker-button ${markerDisplayed ? 'remove-marker' : 'add-marker'}`} onClick={handleAddMarker}>
+        {markerDisplayed ? '- Remove Marker' : '+ Add Marker'}
+      </button>
+    </div>
   );
-
-
 };
 
 export default MapComponent;
