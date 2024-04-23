@@ -8,8 +8,6 @@ import AddLocationAltIcon from '@mui/icons-material/AddLocationAlt';
 import Typography from '@mui/material/Typography';
 import InputBase from '@mui/material/InputBase';
 import Badge from '@mui/material/Badge';
-import MenuItem from '@mui/material/MenuItem';
-import Menu from '@mui/material/Menu';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 import AccountCircle from '@mui/icons-material/AccountCircle';
@@ -189,7 +187,7 @@ export default function PrimarySearchAppBar({pathCoords, setPathCoords}) {
               />
             </Search>
 
-            <Button onClick={handleSubmit} variant="contained" color="primary">Submit</Button>
+            <Button onClick={handleSubmit} variant="contained" color="secondary">Search</Button>
           </SearchContainer>
 
           <Box sx={{ flexGrow: 1 }} />

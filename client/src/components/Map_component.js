@@ -9,13 +9,20 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 import redMarkerIcon from './red_marker.png';
+import ride from './ride.png';
 
 const myMarker = L.icon({
   iconUrl: redMarkerIcon,
   iconSize: [38, 38],
-  iconAnchor: [22, 94],
-  popupAnchor: [-3, -76],
+  iconAnchor: [19, 38], // Adjusted iconAnchor
+  popupAnchor: [0, -38], // Adjusted popupAnchor if necessary
 });
+var taxiIcon = L.icon({
+  iconUrl: ride,
+  iconSize: [38, 38],
+  iconAnchor: [19, 38], // Adjusted iconAnchor
+  popupAnchor: [0, -38], // Adjusted popupAnchor if necessary
+})
 
 const MapComponent = ({ pathCoords }) => {
   const mapRef = useRef(null);
@@ -123,7 +130,41 @@ const MapComponent = ({ pathCoords }) => {
       // Initialize routing control here
       const routingControl = L.Routing.control({
         waypoints: [],
+        createMarker: function (i, waypoint, n) {
+          if (i === 0 || i === n - 1) {
+            // Use custom marker icon for start and destination waypoints
+            return L.marker(waypoint.latLng, {
+              icon: myMarker
+            });
+          }
+        }
+      }).on('routesfound', function (e) {
+        mapRef.current.eachLayer(function (layer) {
+          if (layer.options.icon === taxiIcon) {
+            mapRef.current.removeLayer(layer);
+          }
+        });
+        let taxiMarker = null;
+        let index = 0;
+      
+        const moveTaxi = () => {
+          if (index < e.routes[0].coordinates.length) {
+            const coordinate = e.routes[0].coordinates[index];
+            if (!taxiMarker) {
+              taxiMarker = L.marker(coordinate, { icon: taxiIcon }).addTo(mapRef.current);
+            } else {
+              taxiMarker.setLatLng(coordinate);
+            }
+            index++;
+            setTimeout(moveTaxi, 80);
+          }
+        };
+  
+        moveTaxi();
       }).addTo(map);
+      
+
+      
 
       // Keep a reference to the routing control so you can update it later
       // (e.g., when the pathCoords change)
