@@ -139,6 +139,7 @@ const MapComponent = ({ pathCoords }) => {
           }
         }
       }).on('routesfound', function (e) {
+        console.log(e);
         mapRef.current.eachLayer(function (layer) {
           if (layer.options.icon === taxiIcon) {
             mapRef.current.removeLayer(layer);
