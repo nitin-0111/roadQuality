@@ -64,28 +64,16 @@ const MapComponent = ({ pathCoords, isLoading, setLoading }) => {
   const [circleBoundary, setCircleBoundary] = useState(null);
   const [locationMarker, setLocationMarker] = useState(null);
   const [distance, setDistance] = useState(100000);
-  const [potholes, setPotholes] = useState([{ lat: 26.862664103230202, lng: 75.82017390573363 }]);
+  const [potholes, setPotholes] = useState([]);
+
+  // const [potholes, setPotholes] = useState([{ lat: 26.862664103230202, lng: 75.82017390573363 }]);
+  const [potholesPoint, setPotholesPoint] = useState([]);
+ 
   let polyline = [];
-  let potholesPoint = [];
 
   // const notify = () => toast('User location obtained!', { type: 'success' });
 
-  const playNotificationSound1 = () => {
-    toast.error('pothole !!!', {
-      position: "top-center",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "colored",
 
-    });
-    const audio = new Audio('./sound.mp3');
-    audio.volume = 0.7;
-    audio.play();
-  };
 
 
   const getUserLocation = () => {
@@ -97,7 +85,7 @@ const MapComponent = ({ pathCoords, isLoading, setLoading }) => {
 
           setCurrLocation([latitude, longitude]);
           setAccuracy(position.coords.accuracy)
-          console.log("Accuracy in location ", curAccuracy);
+          // console.log("Accuracy in location ", curAccuracy);
           setShowNotification(true);
           if (markerDisplayed) {
             updateMarkerPosition([latitude, longitude]);
@@ -132,6 +120,12 @@ const MapComponent = ({ pathCoords, isLoading, setLoading }) => {
       radius: 7,
     }).addTo(map);
     setCircleBoundary(circle);
+
+    const markerIcon = document.querySelector('.leaflet-marker-icon');
+    if (markerIcon) {
+      markerIcon.style.transition = 'transform 0.5s ease-out';
+    }
+
   };
 
   const getLabelsFromBackend = async (route) => {
@@ -160,6 +154,16 @@ const MapComponent = ({ pathCoords, isLoading, setLoading }) => {
       selectedLayerObj.addTo(map);
 
 
+      const handleChangeLayer = (event) => {
+        const selected = event.target.value;
+        const selectedLayer = baseLayers[selected];
+        map.eachLayer((layer) => {
+          map.removeLayer(layer);
+        });
+        selectedLayer.addTo(map);
+      };
+
+      const dropdown = L.control.layers(baseLayers).addTo(map);
       if (markerDisplayed) {
         const circle = L.circle(currLocation, {
           color: 'blue',
@@ -180,8 +184,8 @@ const MapComponent = ({ pathCoords, isLoading, setLoading }) => {
         lineOptions: {
           styles: [
             {
-              color: 'blue',
-              opacity: 0.3,
+              color: 'lightblue',
+              opacity: 0.1,
               weight: 6
             }
           ]
@@ -198,10 +202,16 @@ const MapComponent = ({ pathCoords, isLoading, setLoading }) => {
         .on('routesfound', async function (e) {
           try {
 
-            const labeledRoutes = await getLabelsFromBackend(e.routes[0]);
+            // const labeledRoutes = await getLabelsFromBackend(e.routes[0]);
+            const route = e.routes[0];
+            const hLabled = await axios.post(BaseURL + "/hlabel", { route });
             setLoading(false)
             // console.log("labeled", labeledRoutes);
-            await mapLabels(labeledRoutes);
+            // await mapLabels(labeledRoutes);
+            await mapLabels(hLabled.data);
+            await moveLocation(hLabled.data);
+
+
           } catch (error) {
           }
 
@@ -225,10 +235,40 @@ const MapComponent = ({ pathCoords, isLoading, setLoading }) => {
   }, [pathCoords, routingControl]);
 
 
+
+  const moveLocation = async (route) => {
+    const map = mapRef.current;
+    const { coordinates } = route;
+
+    let taxiMarker = L.marker(coordinates[0], { icon: taxiIcon, opacity: 0 }).addTo(map);
+    taxiMarker.setOpacity(1);
+
+    let showNotification = false;
+
+    for (let i = 1; i < coordinates.length; i++) {
+      const { lat, lng, label } = coordinates[i];
+      const coordinate = L.latLng(lat, lng);
+
+      taxiMarker.setLatLng(coordinate);
+
+      if (label === 1 && !showNotification) {
+        playNotificationSound1();
+        showNotification = true;
+      } else if (label !== 1 && showNotification) {
+        showNotification = false;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
+  };
+
+
+
   const mapLabels = async (labeledRoutes) => {
+    // console.log("segment",labeledRoutes);
     const map = mapRef.current;
     polyline.forEach(pl => map.removeLayer(pl));
-    const getColors = ['green', 'red', 'black'];
+    const getColors = ['#15ab4e', '#ab1515', '#85827a'];
 
 
     const route = labeledRoutes
@@ -241,7 +281,7 @@ const MapComponent = ({ pathCoords, isLoading, setLoading }) => {
       if (color !== segmentColor) {
         if (segmentCoordinates.length > 1) {
           console.log("segment ");
-          const pl = L.polyline(segmentCoordinates, { color: segmentColor, zIndexOffset: 100, weight: 10, opacity: 1 }).addTo(map);
+          const pl = L.polyline(segmentCoordinates, { color: segmentColor, zIndexOffset: 100, weight: 8, opacity: 0.7 }).addTo(map);
           polyline.push(pl);
         }
         segmentCoordinates = [];
@@ -260,31 +300,41 @@ const MapComponent = ({ pathCoords, isLoading, setLoading }) => {
 
   };
 
-  useEffect(() => {
-    const checkForPothole = () => {
-      if (currLocation) {
-        const userPoint = turf.point(currLocation);
-        potholes.forEach((pothole) => {
-          const potholePoint = turf.point([pothole.lat, pothole.lng]);
-          const distance = turf.distance(userPoint, potholePoint, { units: 'meters' });
-          if (distance <= 5) {
+
+  // useEffect(() => {
+  //   const checkForPothole = async () => {
+  //     if (currLocation) {
+  //       const userPoint = turf.point(currLocation);
+
+  //       potholes.forEach((pothole) => {
+  //         const potholePoint = turf.point([pothole.lat, pothole.lng]);
+  //         const distance = turf.distance(userPoint, potholePoint, { units: 'meters' });
+  //         console.log("distance", distance);
+  //         if (distance <= 40 && !showNotification) {
+  //           playNotificationSound1();
+  //           setDistance(distance);
+  //           setShowNotification(true);
+  //           return;// Update state to indicate sound has been played for this pothole
+  //         } else if (distance > 40) {
+  //           // Reset soundPlayed state if user moves away from the pothole
+  //           setShowNotification(false);
+  //           return;
+  //         }
+  //       });
+  //     }
+  //   };
+
+  //   const watchID = getUserLocation();
+  //   checkForPothole();
+
+  //   return () => {
+  //     if (watchID) {
+  //       navigator.geolocation.clearWatch(watchID);
+  //     }
+  //   };
+  // }, [currLocation, potholes]);
 
 
-            playNotificationSound1();
-            setDistance(distance) // Play notification sound
-
-          }
-        });
-      }
-    };
-
-    const watchID = getUserLocation();
-    checkForPothole();
-    if (watchID) {
-
-      return () => navigator.geolocation.clearWatch(watchID);
-    }
-  }, [currLocation]);
 
 
 
@@ -328,42 +378,40 @@ const MapComponent = ({ pathCoords, isLoading, setLoading }) => {
 
     }
   };
-  // useEffect(() => {
-
-  // }, [potholes]);
-  const getAllPotholes = async () => {
-    try {
-      const res = await axios.get(BaseURL + '/allPotholes');
-      console.log("pothole===> ", res.data);
-      // setPotholes(prev => [...prev, ...res.data]);
-      setPotholes(res.data);
-
+  useEffect(() => {
+    // Function to add pothole markers to the map
+    const addPotholeMarkers = () => {
       const map = mapRef.current;
 
-      // Remove previous pothole markers
-      potholesPoint.forEach((marker) => {
-        map.removeLayer(marker);
-      });
-      potholesPoint.length = 0
-
+      // Clear previous pothole markers
+      potholesPoint.forEach(marker => map.removeLayer(marker));
+      setPotholesPoint([]);
 
       // Add new pothole markers
-
-      potholes.forEach((point) => {
+      potholes.forEach(point => {
         const marker = L.marker([point.lat, point.lng], {
           icon: L.divIcon({
             className: 'custom-marker',
-            html: '<div style="background-color: red; width: 15px; height: 15px; border-radius: 50%;"></div>'
+            html: '<div style="background-color: red; width: 20px; height: 20px; border-radius: 50%;"></div>'
           })
-
         }).addTo(map);
-        potholesPoint.push(marker);
+        setPotholesPoint(prev => [...prev, marker]);
       });
+    };
 
+    // Call the function to add pothole markers when potholes state changes
+    addPotholeMarkers();
+  }, [potholes]);
+  const getAllPotholes = async () => {
+    try {
+      const res = await axios.get(BaseURL + '/allPotholes');
+      console.log("potholes ===> ", res.data);
+      setPotholes(res.data);
     } catch (error) {
-
+      console.error("Error fetching potholes:", error);
     }
   }
+
 
   const labelHandler = async () => {
     try {
@@ -438,7 +486,7 @@ const MapComponent = ({ pathCoords, isLoading, setLoading }) => {
         >
           Sound Notification
         </button>
-        {/* <button
+        <button
           onClick={getAllPotholes}
           style={{
             padding: '10px 20px',
@@ -450,9 +498,9 @@ const MapComponent = ({ pathCoords, isLoading, setLoading }) => {
             cursor: 'pointer',
           }}
         >
-          All pothole */}
+          All pothole
 
-        {/* </button> */}
+        </button>
       </div>
 
       {/* </div> */}
@@ -464,7 +512,22 @@ const MapComponent = ({ pathCoords, isLoading, setLoading }) => {
 
 
 
+const playNotificationSound1 = () => {
+  toast.error('pothole !!!', {
+    position: "top-center",
+    autoClose: 3000,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+    progress: undefined,
+    theme: "colored",
 
+  });
+  const audio = new Audio('./sound.mp3');
+  audio.volume = 0.7;
+  audio.play();
+};
 
 
 // const updateMapWithRoutes=(labeledRoutes) => {

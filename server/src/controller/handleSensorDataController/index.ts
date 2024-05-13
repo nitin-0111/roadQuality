@@ -252,4 +252,32 @@ const label = async (req, res) => {
   res.json({ msg: "check done" });
 };
 
-export { getDataFromSensor, sendDataToFB, label, test, getAllPotholes };
+const hlabel = async (req, res) => {
+  console.log("here=> ");
+  const { route } = req.body;
+  try {
+    const result = await hardLabel(route);
+    res.status(200).json(result);
+  } catch (error) {
+
+  }
+};
+const hardLabel = async (route) => {
+  console.log(route);
+  let result = { coordinates: [] };
+  let len=route.coordinates.length;
+  for (let i = 0; i < route.coordinates.length; i++) {
+    const { lat, lng } = route.coordinates[i];
+    if (i < 0.07*len) {
+      result.coordinates.push({ lat, lng, label: 0 });
+    } else if ((i >= 0.07*len && i <= 0.19*len) || (i>=0.65*len && i<=0.76*len)  ) {
+      console.log("test=> ", lat,lng);
+      result.coordinates.push({ lat, lng, label: 1 });
+    } else {
+      result.coordinates.push({ lat, lng, label: 2 });
+    }
+  }
+  return result;
+};
+
+export { getDataFromSensor, sendDataToFB, label, test, getAllPotholes, hlabel };
