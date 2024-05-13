@@ -4,6 +4,7 @@ import path from "path";
 import { spawn } from "child_process";
 import saveInDB from "../../db/saveInDB";
 import getDataFromDB from "../../db/getDataFromDB";
+import { RoadDataORM } from "../../db/PostgresQL/orm";
 const hashedSessionID = {};
 const test = (req, res) => {
   res.json("test Done");
@@ -22,6 +23,7 @@ const getDataFromSensor = async (req: Request, res: Response) => {
     csvData_location = "time_loc,longitude,latitude,altitude,time_sec\n";
     hashedSessionID[sessionId] = 1;
   }
+  console.log("inputData-> ", req.body);
 
   req.body.payload.forEach((item: any) => {
     if (item.name === "accelerometer") {
@@ -47,7 +49,6 @@ const getDataFromSensor = async (req: Request, res: Response) => {
   if (!fs.existsSync(directory)) {
     fs.mkdirSync(directory, { recursive: true });
   }
-
   fs.appendFileSync(
     path.join(directory, csvFileName_accelerometer),
     csvData_accelerometer
@@ -59,59 +60,142 @@ const getDataFromSensor = async (req: Request, res: Response) => {
 
   res.json("success");
 };
+const getAllPotholes = async (req, res) => {
+  try {
+    const dbObj = new RoadDataORM();
+    const result = await dbObj.getAllPotholes();
+    console.log(result);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error processing data:---> ", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const result = {
+  coordinates: [
+    { lat: 26.86247, lng: 75.81016, label: 1 },
+    { lat: 26.86271, lng: 75.81017, label: 1 },
+    { lat: 26.86271, lng: 75.81017, label: 1 },
+    { lat: 26.863, lng: 75.8088, label: 1 },
+    { lat: 26.863, lng: 75.8088, label: 1 },
+    { lat: 26.86314, lng: 75.80888, label: 1 },
+    { lat: 26.86328, lng: 75.80892, label: 1 },
+    { lat: 26.86339, lng: 75.80894, label: 1 },
+    { lat: 26.8635, lng: 75.80895, label: 0 },
+    { lat: 26.86362, lng: 75.80893, label: 0 },
+    { lat: 26.86374, lng: 75.8089, label: 0 },
+    { lat: 26.86393, lng: 75.80878, label: 0 },
+    { lat: 26.86407, lng: 75.8087, label: 0 },
+    { lat: 26.86417, lng: 75.80868, label: 0 },
+    { lat: 26.86428, lng: 75.80869, label: 0 },
+    { lat: 26.86448, lng: 75.8087, label: 0 },
+    { lat: 26.86496, lng: 75.80885, label: 0 },
+    { lat: 26.86496, lng: 75.80885, label: 0 },
+    { lat: 26.86505, lng: 75.80848, label: 2 },
+    { lat: 26.86518, lng: 75.80776, label: 2 },
+    { lat: 26.8652, lng: 75.80768, label: 2 },
+    { lat: 26.8652, lng: 75.80768, label: 2 },
+    { lat: 26.86458, lng: 75.80755, label: 2 },
+    { lat: 26.86402, lng: 75.8074, label: 2 },
+    { lat: 26.86353, lng: 75.80728, label: 2 },
+    { lat: 26.86196, lng: 75.80687, label: 2 },
+    { lat: 26.86184, lng: 75.80683, label: 2 },
+    { lat: 26.8617, lng: 75.80673, label: 0 },
+    { lat: 26.86156, lng: 75.80659, label: 0 },
+    { lat: 26.86156, lng: 75.80659, label: 0 },
+    { lat: 26.8613, lng: 75.80654, label: 0 },
+    { lat: 26.8613, lng: 75.80654, label: 0 },
+    { lat: 26.86104, lng: 75.80657, label: 0 },
+    { lat: 26.86087, lng: 75.80661, label: 0 },
+    { lat: 26.86061, lng: 75.80662, label: 0 },
+    { lat: 26.86046, lng: 75.8067, label: 0 },
+    { lat: 26.86022, lng: 75.80694, label: 0 },
+    { lat: 26.86015, lng: 75.80705, label: 0 },
+    { lat: 26.86015, lng: 75.80705, label: 0 },
+    { lat: 26.85996, lng: 75.80757, label: 1 },
+    { lat: 26.85963, lng: 75.80835, label: 1 },
+    { lat: 26.8594, lng: 75.80894, label: 1 },
+    { lat: 26.85936, lng: 75.80905, label: 1 },
+    { lat: 26.85928, lng: 75.80925, label: 1 },
+    { lat: 26.85922, lng: 75.8094, label: 1 },
+    { lat: 26.8588, lng: 75.81054, label: 1 },
+    { lat: 26.85803, lng: 75.81242, label: 1 },
+    { lat: 26.85796, lng: 75.81265, label: 1 },
+    { lat: 26.85784, lng: 75.81303, label: 1 },
+    { lat: 26.85776, lng: 75.81329, label: 1 },
+    { lat: 26.85751, lng: 75.81424, label: 1 },
+    { lat: 26.85748, lng: 75.81436, label: 1 },
+    { lat: 26.8574, lng: 75.81465, label: 0 },
+    { lat: 26.85729, lng: 75.81506, label: 0 },
+    { lat: 26.8572, lng: 75.81541, label: 0 },
+  ],
+};
 
 const sendDataToFB = async (req, res) => {
-  const { longitude, latitude } = req.body;
+  const { route } = req.body;
+  // let route =
+  //   {
+  //     coordinates: [
+  //       {
+  //         lat: 26.86102,
+  //         lng: 75.80844,
+  //       },
+
+  //     ],
+  //   };
+
+  // console.log("routes=> ",route);
+  // routes have multiple routes
 
   try {
-    const dbData = await getDataFromDB({ longitude, latitude });
-    res
-      .status(200)
-      .json({ message: "Data received and processed successfully" });
+    // const dbObj = new RoadDataORM();
+    // await dbObj.connect();
+    // const result = await dbObj.getLabel(route);
+    // console.log("result-> ",result);
+    res.status(200).json(result);
   } catch (error) {
     console.error("Error processing data:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
-const label = async (req, res) => {
-  const sessionId = req.params.sessionId;
+// interface LabeledCoordinate {
+//   LatLng: any;
+//   label: number;
+// }
+function extractSessionId(fileName) {
+  const match = fileName.match(/accelerometer_(.+).csv/);
+  return match ? match[1] : null;
+}
+async function mergeAndPreProcess(sessionId: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const mergeProcess = spawn("python", [
+      "./src/pythonCodes/data_merge.py",
+      sessionId,
+    ]);
 
-  try {
-    await mergeAndPreProcess(sessionId);
-    await predictUsingSVM(sessionId);
-    // await saveInDB(sessionId);
-  } catch (error) {
-    console.log("getting error in labeling using SVM for " + sessionId);
-  }
+    mergeProcess.stdout.on("data", (data) => {
+      console.log(`stdout: ${data}`);
+    });
 
-  res.json({ msg: "check done" });
-};
+    mergeProcess.stderr.on("data", (data) => {
+      console.error(`stderr: ${data}`);
+    });
 
-async function mergeAndPreProcess(sessionId: string) {
-  //  Spawn a Python process to execute the data merge script
-  const mergeProcess = spawn("python", [
-    "./src/pythonCodes/data_merge.py",
-    sessionId,
-  ]);
-
-  // Handle the output or errors from the Python process
-  mergeProcess.stdout.on("data", (data) => {
-    console.log(`stdout: ${data}`);
-  });
-
-  mergeProcess.stderr.on("data", (data) => {
-    console.error(`stderr: ${data}`);
-  });
-
-  // Handle the Python process exit
-  mergeProcess.on("close", (code) => {
-    console.log(`child process exited with code ${code}`);
-    // Additional steps here if needed
+    mergeProcess.on("close", (code) => {
+      console.log(`data_merge.py child process exited with code ${code}`);
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(`data_merge.py exited with non-zero exit code: ${code}`);
+      }
+    });
   });
 }
-async function predictUsingSVM(sessionId: string) {
-  try {
+
+async function predictUsingSVM(sessionId: string): Promise<void> {
+  return new Promise((resolve, reject) => {
     const pythonProcess = spawn("python", [
       "./src/pythonCodes/svm_model.py",
       sessionId,
@@ -127,28 +211,45 @@ async function predictUsingSVM(sessionId: string) {
 
     pythonProcess.on("close", (code: number) => {
       console.log(`svm_model.py child process exited with code ${code}`);
-
-      // Start the test process after pythonProcess is done
-      const testProcess = spawn("python", [
-        "./src/controller/getDataController/test1.py",
-        sessionId,
-      ]);
-
-      testProcess.stdout.on("data", (data: any) => {
-        console.log(`stdout: ${data}`);
-      });
-
-      testProcess.stderr.on("data", (data: any) => {
-        console.error(`stderr: ${data}`);
-      });
-
-      testProcess.on("close", (code: number) => {
-        console.log(`test1.py child process exited with code ${code}`);
-      });
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(`svm_model.py exited with non-zero exit code: ${code}`);
+      }
     });
-  } catch (error) {
-    console.error("Error executing Python scripts:", error);
-  }
+  });
 }
 
-export { getDataFromSensor, sendDataToFB, label, test };
+const label = async (req, res) => {
+  console.log("inside label");
+  try {
+    const tmpDataDir = "./tmp_data";
+    const files = await fs.promises.readdir(tmpDataDir);
+    console.log("files:", files);
+
+    for (const file of files) {
+      const sessionID = extractSessionId(file);
+      // console.log(sessionID);
+      if (sessionID === null) continue;
+      await mergeAndPreProcess(sessionID);
+      await predictUsingSVM(sessionID);
+
+      const outputFilePath = `./tmp_data/output_${sessionID}.csv`;
+      console.log("output ", outputFilePath);
+      if (fs.existsSync(outputFilePath)) {
+        const dbObj = new RoadDataORM();
+        await dbObj.connect();
+        await dbObj.insertData(outputFilePath);
+      } else {
+        console.log("path not exists llll ");
+      }
+    }
+  } catch (error) {
+    console.log("Error in labeling using SVM:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+
+  res.json({ msg: "check done" });
+};
+
+export { getDataFromSensor, sendDataToFB, label, test, getAllPotholes };

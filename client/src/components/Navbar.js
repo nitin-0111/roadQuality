@@ -14,6 +14,7 @@ import AccountCircle from '@mui/icons-material/AccountCircle';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import Button from '@mui/material/Button';
+import { CircularProgress } from '@mui/material';
 
 const SearchContainer = styled('div')(({ theme }) => ({
   display: 'flex',
@@ -60,7 +61,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-export default function PrimarySearchAppBar({pathCoords, setPathCoords}) {
+export default function PrimarySearchAppBar({ pathCoords, setPathCoords, isLoading, setLoading }) {
 
   const [startPoint, setStartPoint] = React.useState('');
   const [destination, setDestination] = React.useState('');
@@ -89,6 +90,7 @@ export default function PrimarySearchAppBar({pathCoords, setPathCoords}) {
   };
 
   const handleSubmit = async () => {
+    setLoading(true)
     await getLocationCoordinates(startPoint, 'start');
     await getLocationCoordinates(destination, 'destination');
   };
@@ -115,7 +117,7 @@ export default function PrimarySearchAppBar({pathCoords, setPathCoords}) {
           }
         }));
       }
-      
+
       console.log(`${type} Point - Latitude: ${lat}, Longitude: ${lon}`);
     } catch (error) {
       console.error('Error fetching location coordinates:', error);
@@ -134,7 +136,7 @@ export default function PrimarySearchAppBar({pathCoords, setPathCoords}) {
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
         <Toolbar>
-          <AddLocationAltIcon 
+          <AddLocationAltIcon
             edge="start"
             color="inherit"
             aria-label="open drawer"
@@ -146,7 +148,7 @@ export default function PrimarySearchAppBar({pathCoords, setPathCoords}) {
             variant="h6"
             noWrap
             component="div"
-            sx={{ display: { xs: 'none', sm: 'block' } , mr: 2 }}
+            sx={{ display: { xs: 'none', sm: 'block' }, mr: 2 }}
           >
             Home
           </Typography>
@@ -155,7 +157,7 @@ export default function PrimarySearchAppBar({pathCoords, setPathCoords}) {
             variant="h6"
             noWrap
             component="div"
-            sx={{ display: { xs: 'none', sm: 'block' } , mr: 40 }}
+            sx={{ display: { xs: 'none', sm: 'block' }, mr: 40 }}
           >
             Help
           </Typography>
@@ -187,13 +189,22 @@ export default function PrimarySearchAppBar({pathCoords, setPathCoords}) {
               />
             </Search>
 
-            <Button onClick={handleSubmit} variant="contained" color="secondary">Search</Button>
-          </SearchContainer>
+            <Button
+              onClick={handleSubmit}
+              variant="contained"
+              color="secondary"
+              style={{ cursor: isLoading ? 'not-allowed' : 'pointer', position: 'relative' }}
+              disabled={isLoading}
+             
+            >
+              {isLoading ? 'Searching' : 'Search'}
+              {isLoading && <CircularProgress size={24} style={{ position: 'absolute', right: '12px' }} />}
+            </Button>      </SearchContainer>
 
           <Box sx={{ flexGrow: 1 }} />
           <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
 
-         
+
             <IconButton
               size="large"
               aria-label="show 17 new notifications"

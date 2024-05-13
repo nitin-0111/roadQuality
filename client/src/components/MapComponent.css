@@ -22,5 +22,31 @@
   .remove-marker:hover {
     background-color: #c9302c;
   }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 95vw;
+    height: 90vh;
+  }
+  
+  .loading-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .button-container {
+    display: flex;
+    gap: 10px; /* Adjust as needed */
+  }
+.mapComponent{
+  width: 95vw;
+    height: 85vh;
+}
+
   
  
